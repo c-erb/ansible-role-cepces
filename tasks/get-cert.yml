@@ -1,0 +1,45 @@
+---
+- name: List CAs
+  become: true
+  ansible.builtin.command:
+    cmd: "getcert list-cas -c {{ item.ca_name }}" 
+  changed_when: false
+  register: _cepces_cas
+
+- name: Add CA configuration
+  become: true
+  ansible.builtin.command:
+    cmd: "getcert add-ca -c {{ item.ca_name }} -e '{{ _cepces_submit_path }}'"
+  when: item.ca_name not in _cepces_cas.stdout
+
+- name: Create folders to hold the key and cert
+  become: true
+  ansible.builtin.file:
+    path: "{{ item | dirname }}"
+    owner: "{{ item.folder_owner | default('root') }}"
+    group: "{{ item.folder_group | default('root') }}"
+    mode: "{{ item.folder_mode | default('0644') }}"
+    state: directory
+  loop:
+    - "{{ item.cert_key }}"
+    - "{{ item.cert_file }}"
+
+- name: Get existing certificate request
+  become: true
+  ansible.builtin.command:
+    cmd: "getcert list -i {{ item.name }}"
+  changed_when: false
+  failed_when: false
+  register: _cepces_request
+
+- name: Remove existing request if it is stuck
+  become: true
+  ansible.builtin.command:
+    cmd: "getcert stop-tracking -i {{ item.name }}"
+  when: "'stuck: yes' in _cepces_request.stdout"
+
+- name: Create host certificate request
+  become: true
+  ansible.builtin.command:
+    cmd: "getcert request -c {{ item.ca_name }} -w -v -m {{ item.key_perm | default('600') }} -M {{ item.cert_perm | default('600') }} -T {{ item.ca_template }} -I {{ item.name }} -k {{ item.cert_key }} -f {{ item.cert_file }} {{ item.extra_flags }}"
+    creates: "{{ item.cert_file }}"

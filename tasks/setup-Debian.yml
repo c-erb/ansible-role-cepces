@@ -1,0 +1,32 @@
+---
+- name: Install certmonger
+  become: true
+  ansible.builtin.package:
+    name: certmonger
+    state: present
+
+- name: Clone cepces git repository
+  become: true
+  ansible.builtin.git:
+    repo: "{{ cepces_git_repository }}"
+    dest: "{{ cepces_git_dest }}"
+    version: "{{ cepces_git_version }}"
+    clone: true
+  register: _cepces_git_clone
+
+- name: Install cepces pip requirements
+  become: true
+  ansible.builtin.pip:
+    requirements: "{{ cepces_git_dest }}/requirements.txt"
+  register: _cepces_pip_req
+
+- name: Install cepces
+  become: true
+  ansible.builtin.command:
+    chdir: "{{ cepces_git_dest }}"
+    cmd: python3 setup.py install
+  when: _cepces_git_clone.changed or _cepces_pip_req.changed
+
+- name: Set _cepces_submit_path
+  ansible.builtin.set_fact:
+    _cepces_submit_path: "{{ cepces_git_dest }}/bin/cepces-submit"

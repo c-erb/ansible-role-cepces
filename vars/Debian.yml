@@ -1,0 +1,7 @@
+# vars file for Debian
+_cepces_required_packages:
+  - git
+  - libkrb5-dev
+  - krb5-config
+  - python3-pip
+  - python3-requests-kerberos

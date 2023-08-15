@@ -1,0 +1,124 @@
+{{ ansible_managed | comment }}
+[global]
+# Hostname of the Certificate Enrollment Policy (CEP) Server.
+# Used to construct the URL to the CEP endpoint.
+#
+server={{ cepces_server }}
+
+# This is the endpoint type. It can be either "Policy" where the server
+# endpoint specified later will be used to look up enrollment endpoints, or it
+# can be "Enrollment" to specify a direct endpoint (bypassing XCEP
+# altogether.)
+type={{ cepces_type }}
+
+# This is the authentication mechanism used for connecting to the service
+# endpoint. The following options are available:
+#
+# * Anonymous
+#             Anonymous authentication (i.e. no authentication at all.) This
+#             is discouraged and untested. It is only included for completness
+#             as defined in the MS-XCEP specification.
+# * Kerberos
+#             Transport level authentication. This is the default where the
+#             authentication is performed in the HTTP(s) layer.
+# * UsernamePassword
+#             Message level authentication. The credentials are used in the
+#             message header for authentication.
+# * Certificate
+#             Transport level authentication. A client certificate is used
+#             for TLS client authentication in the HTTPS layer.
+#
+# Default: Kerberos
+auth={{ cepces_auth }}
+
+# This is the final URL of the Policy Provider endpoint.
+#
+# Default: https://${server}/ADPolicyProvider_CEP_${auth}/service.svc/CEP
+endpoint={{ cepces_endpoint }}
+# Path to a CA bundle or directory containing certificates. If not specified,
+# the system default is used. If set to an empty value, verification is
+# bypassed. This is strongly discouraged.
+#
+# Please note that directories are supported starting with python-requests 2.9.
+#
+# Default: <not defined>
+{% if cepces_cas is defined %}
+cas={{ cepces_cas }}
+{% endif %}
+
+# Time in seconds before re-checking if the certificate has been issued
+poll_interval={{ cepces_poll_interval }}
+
+# This is the openssl security level. The latest openssl sets the default to
+# level 2, which disables some less secure ciphers. You may encounter an error
+# of '[SSL: DH_KEY_TOO_SMALL] dh key too small' if this level is set to high
+# for your server. If this happens, you can work around this issue by setting
+# openssl_seclevel to 1.
+#
+# Default: 2
+openssl_seclevel={{ cepces_openssl_seclevel }}
+
+[kerberos]
+# Use the specified keytab. If unspecified, the system default is used.
+#
+# Default: <not defined>
+{% if cepces_kerberos_keytab is defined %}
+keytab={{ cepces_kerberos_keytab }}
+{% endif %}
+
+# An optional explicit realm to use. If unspecified, the default system realm
+# is used.
+#
+# Default: <not defined>
+{% if cepces_kerberos_realm is defined %}
+realm={{ cepces_kerberos_realm }}
+{% endif %}
+
+# Initialize a credential cache. If this is disabled, a valid credential cache
+# is required prior launching the application. If enabled, a temporary
+# in-memory cache is created, and released when the application ends.
+#
+# Default: True
+ccache={{ cepces_kerberos_ccache }}
+
+# A list of principals to try when requesting a ticket.
+#
+# Default: <not defined>
+principals=
+{% for principal in cepces_kerberos_principals %}
+  {{ principal }}
+{% endfor %}
+
+# A list of encryption types to use.
+#
+# Default: <not defined>
+enctypes=
+{% for enctype in cepces_kerberos_enctypes %}
+  {{ enctype }}
+{% endfor %}
+
+# When the webenrollment services and the CA aren't installed on the same
+# machine you will get a access denied error if kerberos delegation is
+# disabled. This is enabled by default.
+#
+# Default: True
+delegate={{ cepces_kerberos_delegate }}
+
+[certificate]
+# Use the following client certificate,
+# given as OpenSSL format certificate file.
+# The issuer CA certificate of this client certificate must be included
+# in the AD NTAuth container.
+#
+# Default: <not defined>
+{% if cepces_certificate_certfile is defined %}
+certfile = {{ cepces_certificate_certfile }}
+{% endif %}
+
+# Use the following client certificate key,
+# given as OpenSSL format private key file without passphrase protection.
+#
+# Default: <not defined>
+{% if cepces_certificate_keyfile is defined %}
+keyfile = {{ cepces_certificate_keyfile }}
+{% endif %}

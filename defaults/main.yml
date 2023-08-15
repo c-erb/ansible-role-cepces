@@ -1,0 +1,36 @@
+---
+# defaults file for cepces
+# git
+cepces_git_repository: https://github.com/openSUSE/cepces
+cepces_git_version: master
+cepces_git_dest: /opt/cepces
+
+# config
+cepces_config_dest: /etc/cepces/cepces.conf
+## global
+#cepces_server
+cepces_type: Policy
+cepces_auth: Kerberos
+cepces_endpoint: 'https://${server}/ADPolicyProvider_CEP_${auth}/service.svc/CEP'
+#cepces_cas
+cepces_poll_interval: 3600
+cepces_openssl_seclevel: 2
+## kerberos
+#cepces_kerberos_keytab
+#cepces_kerberos_realm
+cepces_kerberos_ccache: 'True'
+cepces_kerberos_principals:
+  - '${shortname}$$'
+  - '${SHORTNAME}$$'
+  - 'host/${SHORTNAME}'
+  - 'host/${fqdn}'
+cepces_kerberos_enctypes:
+  - 'des-cbc-crc'
+  - 'des-cbc-md5'
+  - 'arcfour-hmac'
+  - 'aes128-cts-hmac-sha1-96'
+  - 'aes256-cts-hmac-sha1-96'
+cepces_kerberos_delegate: 'True'
+## certificate
+#cepces_certificate_certfile
+#cepces_certificate_keyfile

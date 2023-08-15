@@ -1,0 +1,66 @@
+---
+# tasks file for cepces
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ lookup('ansible.builtin.first_found', params) }}"
+  vars:
+    params:
+      files:
+        - '{{ansible_distribution}}.yml'
+        - '{{ansible_os_family}}.yml'
+        - 'main.yml'
+      paths:
+        - 'vars'
+
+- name: Install prerequisites
+  become: true
+  ansible.builtin.package:
+    name: "{{ _cepces_required_packages }}"
+    state: present
+
+- name: Setup for debian bases OSes
+  ansible.builtin.include_tasks: setup-Debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: Create folder to hold the configuration
+  become: true
+  ansible.builtin.file:
+    path: "{{ cepces_config_dest | dirname }}"
+    owner: root
+    group: root
+    mode: '0644'
+    state: directory
+
+- name: Configure cepces
+  become: true
+  ansible.builtin.template:
+    src: etc/cepces/cepces.conf.j2
+    dest: "{{ cepces_config_dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check that the hostname is shorter than 16 characters
+  block:
+    - name: Get hostname
+      ansible.builtin.cmd:
+        cmd: hostname -s
+      changed_when: false
+      register: _cepces_hostname
+
+    - name: Show error if the hostname is too long
+      fail:
+        msg: "Your hostname {{ _cepces_hostname.stdout }} is longer than 15 characters. This can cause issues"
+      when: _cepces_hostname.stdout | length > 15
+      ignore_errors: true
+
+- name: Remove existing ca if defined
+  become: true
+  ansible.builtin.command:
+    cmd: "getcert remove-ca -c {{ item }}"
+  loop: "{{ cepces_remove_ca }}"
+  when: cepces_remove_ca is defined and cepces_remove_ca is iterable
+
+- name: Configure cepces ca and request certificates
+  ansible.builtin.include_tasks: get-cert.yml
+  loop: "{{ cepces_requests }}"
+  when: cepces_requests is defined

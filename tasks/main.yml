@@ -42,7 +42,7 @@
 - name: Check that the hostname is shorter than 16 characters
   block:
     - name: Get hostname
-      ansible.builtin.cmd:
+      ansible.builtin.command:
         cmd: hostname -s
       changed_when: false
       register: _cepces_hostname
